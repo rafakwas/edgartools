@@ -704,15 +704,16 @@ def latest_filing_date():
 
 def is_compressed_file(file_path: Path) -> bool:
     """
-    Check if a file is gzip-compressed by examining its extension.
+    Check if a file is compressed by examining its extension.
 
     Args:
         file_path: Path to the file
 
     Returns:
-        bool: True if the file has a .gz extension, False otherwise
+        bool: True if the file has a .gz or .zst extension, False otherwise
     """
-    return str(file_path).endswith('.gz')
+    # nexus-patches: .zst alongside .gz (crystal vault stores zstd-19)
+    return str(file_path).endswith(('.gz', '.zst'))
 
 
 def compress_filing(file_path: Path, compression_level: int = 6, delete_original: bool = True) -> Path:
@@ -884,6 +885,10 @@ def local_filing_path(filing_date: Union[str, date],
     else:
         # Original local filesystem path
         base_path = get_edgar_data_directory() / 'filings' / filing_date / f"{accession_number}.{ext}"
+        # nexus-patches: prefer .zst (crystal vault), then .gz, then plain
+        zstd_path = Path(f"{base_path}.zst")
+        if zstd_path.exists():
+            return zstd_path
         compressed_path = Path(f"{base_path}.gz")
         if compressed_path.exists():
             return compressed_path

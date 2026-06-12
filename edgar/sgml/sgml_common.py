@@ -81,8 +81,14 @@ def read_content(source: Union[str, Path, 'EdgarPath'], bypass_cache: bool = Fal
         # Handle local file path (pathlib.Path or string)
         path = Path(source)
 
+        # Check if the file is zstd-compressed (nexus-patches: crystal vault
+        # stores .nc.zst — zstd-19 halves gzip size on SGML corpora)
+        if str(path).endswith('.zst'):
+            import zstandard
+            with zstandard.open(path, 'rt', encoding='utf-8', errors='replace') as file:
+                yield from file
         # Check if the file is gzip-compressed
-        if str(path).endswith('.gz'):
+        elif str(path).endswith('.gz'):
             import gzip
             with gzip.open(path, 'rt', encoding='utf-8', errors='replace') as file:
                 yield from file
