@@ -1623,7 +1623,13 @@ class Filing:
                         rendered = xml_obj.to_html()
                         if rendered:
                             return rendered
-                html = self.homepage.primary_html_document.download()
+                # nexus-patches: inline iXBRL primary docs open with an <?xml prolog
+                # yet ARE html (<html xmlns:ix=...>) — content is already in hand from
+                # the local SGML. Re-fetch from the homepage ONLY when the local content
+                # is genuinely not html. Prevents a needless round-trip AND offline
+                # breakage under use_local_storage(allow_network_fallback=False).
+                if not is_probably_html(html):
+                    html = self.homepage.primary_html_document.download()
         if isinstance(html, bytes):
             try:
                 return html.decode("utf-8")
